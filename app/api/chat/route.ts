@@ -3,6 +3,8 @@ import { getChatModel } from "@/features/ai/utils/model";
 import { requireUser } from "@/features/auth/action/require-user";
 import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
+import { webSearchTool } from "@/features/ai/tools/web-search";
+import { stepCountIs } from "ai";
 import { convertToModelMessages, createIdGenerator, createUIMessageStream, createUIMessageStreamResponse, streamText, toUIMessageStream, type UIMessage } from "ai";
 /**
  * POST /api/chat — Streams an AI assistant reply for a conversation.
@@ -44,14 +46,57 @@ export async function POST(req: Request) {
         await saveChatMessages(id, [message]);
     }
 
-    const result =  streamText({
-        model: getChatModel(conversation.model),
-        system: conversation.systemPrompt ?? "You are ChaiGpt , a helpful assistant",
-        messages: await convertToModelMessages(messages),
-    });
+    // const result =  streamText({
+    //     model: getChatModel(conversation.model),
+    //     system: conversation.systemPrompt ?? "You are ChaiGpt , a helpful assistant",
+    //     messages: await convertToModelMessages(messages),
+    // });
+// const result = streamText({
+    
+//     model: getChatModel(conversation.model),
 
+//     system: `
+// You are ChaiGPT.
+
+// If the user asks about current events, recent news, recent software releases,
+// sports, weather, live information or anything that may have changed recently,
+// use the webSearch tool.
+
+// Do not use the tool for timeless questions like math,
+// algorithms or programming concepts.
+// `,
+
+//     messages: await convertToModelMessages(messages),
+
+//     tools: {
+//         webSearch: webSearchTool,
+//     },
+// });
+
+const result = streamText({
+  model: getChatModel(conversation.model),
+
+  system: `
+You are ChaiGPT.
+
+You are a helpful assistant.
+
+When you use webSearch, ALWAYS answer the user's question after receiving the tool result.
+Never stop after calling the tool.
+
+Do not use the tool for timeless questions.
+`,
+
+  messages: await convertToModelMessages(messages),
+
+  tools: {
+    webSearch: webSearchTool,
+  },
+
+  stopWhen: stepCountIs(2),
+});
     result.consumeStream();
-
+    console.log(result);
     return createUIMessageStreamResponse({
         stream:toUIMessageStream({
            stream:result.stream,

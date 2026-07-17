@@ -34,7 +34,9 @@ type ChatMessagesProps = {
 export function ChatMessages({ messages, status }: ChatMessagesProps) {
   const isWaiting =
     status === "submitted" && messages.at(-1)?.role === "user";
-
+console.log(
+    JSON.stringify(messages, null, 2)
+);
   return (
     <Conversation>
       <ConversationContent className="py-8">
