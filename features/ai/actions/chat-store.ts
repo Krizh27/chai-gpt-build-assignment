@@ -40,7 +40,7 @@ export async function loadChatMessages(
     orderBy: { createdAt: "asc" },
   });
 
-  return rows.map((row) => ({
+  return rows.map((row: any) => ({
     id: row.id,
     role: row.role === "ASSISTANT" ? "assistant" : "user",
     content: row.content,
