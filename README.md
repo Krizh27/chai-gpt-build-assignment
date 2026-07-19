@@ -9,8 +9,8 @@ A production-grade, highly responsive AI chat application featuring continuous s
 
 ## Live Demo
 
-- **Live URL:** [Insert Live Deployment URL Here]
-- **Demo Video:** [Insert Demo Video Link Here]
+- **Live URL:** https://chai-gpt-build-assignment.vercel.app
+- **Demo Video:** [Insert YouTube Video Link Here]
 
 ---
 
@@ -21,12 +21,12 @@ A production-grade, highly responsive AI chat application featuring continuous s
 - **Why it exists:** Waiting for a full LLM response causes terrible UX latency. Streaming provides immediate feedback.
 - **How it works:** Leverages the Vercel AI SDK `streamText` function to process and pipe the LLM output directly into a `ReadableStream`, updating the React UI instantaneously.
 
-### Web Search Tool Calling (Tavily Integration)
+### Phase 1: AI Tools (Web Search Tool Calling)
 - **What it does:** Allows the AI to browse the internet for up-to-date information dynamically during a conversation.
 - **Why it exists:** Standard LLMs have a knowledge cutoff. Tool calling gives the model access to real-time data.
 - **How it works:** The model is provided a `webSearchTool` schema. When it decides it needs real-time data, it pauses generation, invokes the Tavily API, processes the results, and incorporates them into its final streamed answer.
 
-### Advanced Chat Branching
+### Phase 2: Chat Branching
 - **What it does:** Allows users to "fork" a conversation from any specific message in the past, creating an alternate reality/branch of the conversation.
 - **Why it exists:** Users frequently want to correct a prompt or explore a different line of questioning without losing their current highly-developed context.
 - **How it works:** The `createBranch` Server Action duplicates the conversation history up to the selected message in the database, tying the new messages to a fresh `BranchId` while sharing the parent `ConversationId`.
