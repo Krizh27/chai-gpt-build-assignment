@@ -7,7 +7,6 @@ import type { ChatStatus } from "ai";
 import {
   Conversation,
   ConversationContent,
-  ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 import {
   Message,
@@ -16,8 +15,9 @@ import {
 } from "@/components/ai-elements/message";
 import { Loader } from "@/components/ai-elements/loader";
 import { Button } from "@/components/ui/button";
-import { GitFork, Loader2, CheckCircle2 } from "lucide-react";
+import { GitFork } from "lucide-react";
 import { useCreateBranch } from "../hooks/use-conversation";
+import { WebSearchCard } from "./web-search-card";
 
 /** Extracts plain text from a `UIMessage` by joining all text parts. */
 function getMessageText(message: UIMessage) {
@@ -60,16 +60,8 @@ const MessageItem = React.memo(function MessageItem({
     return (
         <Message from={message.role}>
             <MessageContent>
-              {((message as any).toolInvocations || []).map((tool: any) => (
-                 <div key={tool.toolCallId} className="flex flex-col gap-1 mb-3 last:mb-2 animate-in fade-in slide-in-from-bottom-1 duration-300">
-                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-muted/40 hover:bg-muted/60 transition-colors w-fit px-3 py-2 rounded-full border border-border/50 shadow-sm cursor-default">
-                        {tool.state === 'result' ? (
-                            <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> <span className="text-foreground/80">Web search complete</span></>
-                        ) : (
-                            <><Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" /> Searching the web...</>
-                        )}
-                    </div>
-                 </div>
+              {((message as { toolInvocations?: Array<{ toolCallId: string, state: "call" | "result", args: { query: string }, result?: any }> }).toolInvocations || []).map((tool) => (
+                  <WebSearchCard key={tool.toolCallId} tool={tool} />
               ))}
 
               {text.length > 0 && <MessageResponse>{text}</MessageResponse>}
@@ -109,7 +101,12 @@ export function ChatMessages({ messages, status, activeBranchId, conversationId 
   const { mutate: createBranch, isPending: isCreatingBranch } = useCreateBranch();
 
   // Stable callback for branching
-  const handleCreateBranch = React.useCallback((params: any) => {
+  const handleCreateBranch = React.useCallback((params: {
+      conversationId: string;
+      name: string;
+      activeBranchId: string;
+      upToMessageId: string;
+  }) => {
       createBranch(params);
   }, [createBranch]);
 

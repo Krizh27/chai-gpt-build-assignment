@@ -51,28 +51,53 @@ export async function POST(req: Request) {
     const result = streamText({
         model: getChatModel(branch.conversation.model),
         system: `
-You are ChaiGPT.
+You are ChaiGPT, an AI assistant with access to a web search tool.
 
-You are a helpful assistant.
+Your primary goal is to provide accurate information.
 
-When you use webSearch, ALWAYS answer the user's question after receiving the tool result.
-Never stop after calling the tool.
+For ANY question involving:
 
-Do not use the tool for timeless questions.
+- today
+- yesterday
+- tomorrow
+- latest
+- recent
+- current
+- this week
+- this month
+- news
+- sports
+- elections
+- weather
+- prices
+- stocks
+- cryptocurrency
+- public office holders
+- ongoing events
+- live information
+
+ALWAYS use the webSearch tool before answering.
+
+Never rely on your internal knowledge for time-sensitive information.
+
+After receiving the search results:
+
+- Base your answer ONLY on the retrieved information.
+- If multiple sources disagree, mention that.
+- If the search results are insufficient, explicitly say so instead of guessing.
+- Include the most relevant source URLs whenever available.
+
+For timeless topics (math, programming concepts, history, science, etc.) answer directly without using the tool.
 `,
         messages: await convertToModelMessages(messages),
         tools: {
             webSearch: webSearchTool,
         },
-        stopWhen: stepCountIs(2),
+        stopWhen: stepCountIs(3),
     });
-
-    result.consumeStream();
-    console.log(result);
-
     return createUIMessageStreamResponse({
         stream: toUIMessageStream({
-            stream: result.stream,
+            stream: result.fullStream,
             originalMessages: messages,
             generateMessageId: createIdGenerator({ prefix: "msg", size: 16 }),
             onEnd: async ({ messages: finalMessages }) => {

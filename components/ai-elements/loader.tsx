@@ -1,6 +1,4 @@
 import type { HTMLAttributes } from "react";
-import { Loader2Icon } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 
 /** Props for the {@link Loader} spinner component. */
@@ -9,7 +7,7 @@ export type LoaderProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 /** Pulsing loading indicator for in-progress assistant responses. */
-export const Loader = ({ className, size = 16, ...props }: LoaderProps) => (
+export const Loader = ({ className, ...props }: LoaderProps) => (
   <div
     className={cn("flex items-center gap-1 h-6 px-1", className)}
     {...props}

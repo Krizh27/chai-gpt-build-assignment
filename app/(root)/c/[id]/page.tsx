@@ -18,7 +18,7 @@ const page = async({params, searchParams}:ConversationPageProps) => {
 
     try {
       await getConversation(id)
-    } catch (error) {
+    } catch {
       notFound()
     }
 

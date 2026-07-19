@@ -2,7 +2,7 @@ import { Globe, GitFork, Zap, Sparkles } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
 
 /** Empty-state placeholder shown before the first message is sent. */
-export function ChatEmpty({ onPromptSelect }: { onPromptSelect?: (prompt: string) => void }) {
+export function ChatEmpty() {
   return (
     <div className="flex flex-1 flex-col items-center justify-center px-4">
       <div className="mb-4 flex size-14 items-center justify-center">

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 
 /** Extracts plain text from an AI SDK `UIMessage` by joining all text parts. */
 function getMessageText(message: UIMessage) {
-  if (!message.parts) return (message as any).content || "";
+  if (!message.parts) return (message as { content?: string }).content || "";
   return message.parts.filter(isTextUIPart).map((part) => part.text).join("");
 }
 
@@ -45,7 +45,7 @@ export async function loadChatMessages(
     role: row.role === "ASSISTANT" ? "assistant" : "user",
     content: row.content,
     parts: toUIMessageParts(row.parts, row.content),
-    toolInvocations: row.metadata as any,
+    toolInvocations: row.metadata as Array<{ toolCallId: string, state: "call" | "result", args: any, result?: any }> | undefined,
   }) as UIMessage);
 }
 
@@ -82,12 +82,12 @@ export async function saveChatMessages(
         status: "COMPLETE",
         content,
         parts: message.parts as Prisma.InputJsonValue,
-        metadata: ((message as any).toolInvocations || []) as Prisma.InputJsonValue,
+        metadata: ((message as { toolInvocations?: unknown[] }).toolInvocations || []) as Prisma.InputJsonValue,
       },
       update: {
         content,
         parts: message.parts as Prisma.InputJsonValue,
-        metadata: ((message as any).toolInvocations || []) as Prisma.InputJsonValue,
+        metadata: ((message as { toolInvocations?: unknown[] }).toolInvocations || []) as Prisma.InputJsonValue,
         status: "COMPLETE",
       },
     });

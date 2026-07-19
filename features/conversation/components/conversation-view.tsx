@@ -48,6 +48,7 @@ export const ConversationView = ({ conversationId, branches, activeBranchId, ini
     const [mounted, setMounted] = React.useState(false);
 
     React.useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
     
@@ -57,7 +58,7 @@ export const ConversationView = ({ conversationId, branches, activeBranchId, ini
 
     const transport = useMemo(() => new DefaultChatTransport({
         api: "/api/chat",
-        prepareSendMessagesRequest: ({ id, messages }) => ({
+        prepareSendMessagesRequest: ({ messages }) => ({
             body: {
                 id: activeBranchId, // we pass the branchId instead of conversationId
                 message: messages.at(-1)
@@ -200,7 +201,7 @@ export const ConversationView = ({ conversationId, branches, activeBranchId, ini
             {/* Added opacity change while switching to indicate loading state for the main chat area */}
             <div className={`flex flex-1 flex-col min-h-0 overflow-hidden transition-opacity duration-300 ${isSwitchingBranch ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 {messages.length === 0 ? (
-                    <ChatEmpty onPromptSelect={(prompt) => setInput(prompt)} />
+                    <ChatEmpty />
                 ) : (
                     <ChatMessages messages={messages} status={status} activeBranchId={activeBranchId} conversationId={conversationId} />
                 )}

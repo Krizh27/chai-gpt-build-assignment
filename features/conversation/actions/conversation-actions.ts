@@ -3,6 +3,7 @@
 import { requireUser } from "@/features/auth/action/require-user";
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { Prisma, type Message } from "@/lib/generated/prisma/client";
 
 /** Shape of a conversation row returned in the sidebar list. */
 export type ConversationListItem = {
@@ -188,7 +189,7 @@ export async function createBranch(conversationId: string, name: string, activeB
 
     // If we are forking from a specific message, copy history up to that point
     if (activeBranchId) {
-        let messagesToCopy: any[] = [];
+        let messagesToCopy: Message[] = [];
         
         if (upToMessageId) {
             const upToMessage = await prisma.message.findUnique({ where: { id: upToMessageId } });
@@ -216,8 +217,8 @@ export async function createBranch(conversationId: string, name: string, activeB
                     role: m.role,
                     status: m.status,
                     content: m.content,
-                    parts: m.parts ?? require("@prisma/client").Prisma.JsonNull,
-                    metadata: m.metadata ?? require("@prisma/client").Prisma.JsonNull,
+                    parts: m.parts ?? Prisma.JsonNull,
+                    metadata: m.metadata ?? Prisma.JsonNull,
                     createdAt: m.createdAt,
                     updatedAt: m.updatedAt,
                 }))

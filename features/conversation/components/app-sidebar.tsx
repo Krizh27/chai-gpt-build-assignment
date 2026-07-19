@@ -12,10 +12,8 @@ import {
   Trash2Icon,
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
-import { useTheme } from "next-themes";
 import { Logo } from "@/components/ui/logo";
 
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
