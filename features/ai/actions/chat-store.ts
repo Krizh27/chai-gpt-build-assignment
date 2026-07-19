@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 
 /** Extracts plain text from an AI SDK `UIMessage` by joining all text parts. */
 function getMessageText(message: UIMessage) {
+  if (!message.parts) return (message as any).content || "";
   return message.parts.filter(isTextUIPart).map((part) => part.text).join("");
 }
 
@@ -26,24 +27,26 @@ function toUIMessageParts(
 }
 
 /**
- * Loads all messages for a conversation from the database as AI SDK `UIMessage`s.
+ * Loads all messages for a branch from the database as AI SDK `UIMessage`s.
  *
- * @param conversationId - The conversation whose messages to load.
+ * @param branchId - The branch whose messages to load.
  * @returns Messages ordered oldest to newest, ready for `useChat`.
  */
 export async function loadChatMessages(
-  conversationId: string
+  branchId: string
 ): Promise<UIMessage[]> {
   const rows = await prisma.message.findMany({
-    where: { conversationId },
+    where: { branchId },
     orderBy: { createdAt: "asc" },
   });
 
   return rows.map((row) => ({
     id: row.id,
     role: row.role === "ASSISTANT" ? "assistant" : "user",
+    content: row.content,
     parts: toUIMessageParts(row.parts, row.content),
-  }));
+    toolInvocations: row.metadata as any,
+  }) as UIMessage);
 }
 
 type SaveChatMessagesOptions = {
@@ -51,14 +54,14 @@ type SaveChatMessagesOptions = {
 };
 
 /**
- * Upserts AI SDK `UIMessage`s into the database for a conversation.
+ * Upserts AI SDK `UIMessage`s into the database for a branch.
  *
- * @param conversationId - Target conversation ID.
+ * @param branchId - Target branch ID.
  * @param messages - Messages to persist (system messages are skipped).
  * @param options.updateTitle - When true, auto-titles "New Chat" from the first user message.
  */
 export async function saveChatMessages(
-  conversationId: string,
+  branchId: string,
   messages: UIMessage[],
   options: SaveChatMessagesOptions = {}
 ) {
@@ -74,36 +77,38 @@ export async function saveChatMessages(
       where: { id: message.id },
       create: {
         id: message.id,
-        conversationId,
+        branchId,
         role,
         status: "COMPLETE",
         content,
         parts: message.parts as Prisma.InputJsonValue,
+        metadata: ((message as any).toolInvocations || []) as Prisma.InputJsonValue,
       },
       update: {
         content,
         parts: message.parts as Prisma.InputJsonValue,
+        metadata: ((message as any).toolInvocations || []) as Prisma.InputJsonValue,
         status: "COMPLETE",
       },
     });
   }
 
-  const conversation = await prisma.conversation.findUniqueOrThrow({
-    where: { id: conversationId },
-    select: { title: true },
+  const branch = await prisma.branch.findUniqueOrThrow({
+    where: { id: branchId },
+    include: { conversation: { select: { title: true } } },
   });
 
   const firstUser = messages.find((message) => message.role === "user");
   const firstUserText = firstUser ? getMessageText(firstUser).trim() : "";
 
   await prisma.conversation.update({
-    where: { id: conversationId },
+    where: { id: branch.conversationId },
     data: {
       lastMessageAt: new Date(),
       title:
-        updateTitle && conversation.title === "New Chat" && firstUserText
+        updateTitle && branch.conversation.title === "New Chat" && firstUserText
           ? firstUserText.slice(0, 48)
-          : conversation.title,
+          : branch.conversation.title,
     },
   });
 }

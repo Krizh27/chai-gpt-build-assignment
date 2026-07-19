@@ -82,7 +82,16 @@ export async function createConversation(title = "New Chat") {
         data: {
             userId: user.id,
             title: title.trim() || "New Chat",
+            branches: {
+                create: {
+                    name: "Main",
+                    isMain: true,
+                }
+            }
         },
+        include: {
+            branches: true
+        }
     });
 }
 
@@ -131,4 +140,140 @@ export async function deleteConversation(conversationId: string) {
 
     revalidatePath("/");
     return { id: conversationId };
+}
+
+/**
+ * Fetches all branches for a given conversation.
+ *
+ * @param conversationId - The conversation ID.
+ */
+export async function getBranches(conversationId: string) {
+    const user = await requireUser();
+    await assertOwnsConversation(conversationId, user.id);
+
+    let branches = await prisma.branch.findMany({
+        where: { conversationId },
+        orderBy: { createdAt: "desc" }
+    });
+
+    // Auto-repair conversations that have no branches
+    if (branches.length === 0) {
+        const newBranch = await prisma.branch.create({
+            data: {
+                name: "Main",
+                isMain: true,
+                conversationId
+            }
+        });
+        branches = [newBranch];
+    }
+
+    return branches;
+}
+
+/**
+ * Creates a new branch for a given conversation, optionally copying messages.
+ */
+export async function createBranch(conversationId: string, name: string, activeBranchId?: string, upToMessageId?: string) {
+    const user = await requireUser();
+    await assertOwnsConversation(conversationId, user.id);
+
+    const branch = await prisma.branch.create({
+        data: {
+            name: name.trim() || "New Branch",
+            isMain: false,
+            conversationId
+        }
+    });
+
+    // If we are forking from a specific message, copy history up to that point
+    if (activeBranchId) {
+        let messagesToCopy: any[] = [];
+        
+        if (upToMessageId) {
+            const upToMessage = await prisma.message.findUnique({ where: { id: upToMessageId } });
+            if (upToMessage) {
+                messagesToCopy = await prisma.message.findMany({
+                    where: {
+                        branchId: activeBranchId,
+                        createdAt: { lte: upToMessage.createdAt }
+                    },
+                    orderBy: { createdAt: "asc" }
+                });
+            }
+        } else {
+            messagesToCopy = await prisma.message.findMany({
+                where: { branchId: activeBranchId },
+                orderBy: { createdAt: "asc" }
+            });
+        }
+            
+        if (messagesToCopy.length > 0) {
+            // Copy messages to the new branch while preserving timestamps for correct ordering
+            await prisma.message.createMany({
+                data: messagesToCopy.map((m) => ({
+                    branchId: branch.id,
+                    role: m.role,
+                    status: m.status,
+                    content: m.content,
+                    parts: m.parts ?? require("@prisma/client").Prisma.JsonNull,
+                    metadata: m.metadata ?? require("@prisma/client").Prisma.JsonNull,
+                    createdAt: m.createdAt,
+                    updatedAt: m.updatedAt,
+                }))
+            });
+        }
+    }
+
+    revalidatePath(`/c/${conversationId}`);
+    return branch;
+}
+
+/**
+ * Renames an existing branch.
+ */
+export async function renameBranch(branchId: string, newName: string) {
+    const user = await requireUser();
+    
+    const branch = await prisma.branch.findUnique({
+        where: { id: branchId },
+        include: { conversation: true }
+    });
+    
+    if (!branch || branch.conversation.userId !== user.id) {
+        throw new Error("Branch not found");
+    }
+
+    const updated = await prisma.branch.update({
+        where: { id: branchId },
+        data: { name: newName.trim() || branch.name }
+    });
+    
+    revalidatePath(`/c/${branch.conversationId}`);
+    return updated;
+}
+
+/**
+ * Deletes a branch, ensuring it is not the last remaining branch.
+ */
+export async function deleteBranch(branchId: string) {
+    const user = await requireUser();
+    
+    const branch = await prisma.branch.findUnique({
+        where: { id: branchId },
+        include: { conversation: { include: { branches: true } } }
+    });
+    
+    if (!branch || branch.conversation.userId !== user.id) {
+        throw new Error("Branch not found");
+    }
+
+    if (branch.conversation.branches.length <= 1) {
+        throw new Error("Cannot delete the only remaining branch");
+    }
+
+    await prisma.branch.delete({ where: { id: branchId } });
+    
+    revalidatePath(`/c/${branch.conversationId}`);
+    return { id: branchId, conversationId: branch.conversationId };
 }

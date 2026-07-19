@@ -8,12 +8,14 @@ export type LoaderProps = HTMLAttributes<HTMLDivElement> & {
   size?: number;
 };
 
-/** Spinning loading indicator for in-progress assistant responses. */
+/** Pulsing loading indicator for in-progress assistant responses. */
 export const Loader = ({ className, size = 16, ...props }: LoaderProps) => (
   <div
-    className={cn("inline-flex items-center justify-center", className)}
+    className={cn("flex items-center gap-1 h-6 px-1", className)}
     {...props}
   >
-    <Loader2Icon className="animate-spin" size={size} />
+    <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-bounce [animation-delay:-0.3s]" />
+    <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-bounce [animation-delay:-0.15s]" />
+    <div className="w-1.5 h-1.5 rounded-full bg-foreground/50 animate-bounce" />
   </div>
 );

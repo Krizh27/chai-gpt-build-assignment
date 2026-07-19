@@ -18,6 +18,9 @@ type ChatComposerProps = {
   placeholder?: string;
   className?: string;
   autoFocus?: boolean;
+  value?: string;
+  onChange?: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
+  setInputValue?: (v: string) => void;
 };
 
 /**
@@ -29,9 +32,15 @@ export function ChatComposer({
   placeholder = "Message ChaiGPT…",
   className,
   autoFocus = false,
+  value,
+  onChange,
+  setInputValue,
 }: ChatComposerProps) {
-  const [value, setValue] = React.useState("");
+  const [internalValue, setInternalValue] = React.useState("");
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  
+  const isControlled = value !== undefined;
+  const currentValue = isControlled ? value : internalValue;
 
   React.useEffect(() => {
     if (autoFocus) {
@@ -42,10 +51,15 @@ export function ChatComposer({
   /** Submits the current message when the form is submitted or Enter is pressed. */
   async function handleSubmit(event?: React.FormEvent) {
     event?.preventDefault();
-    const content = value.trim();
+    const content = currentValue.trim();
     if (!content || isSending) return;
 
-    setValue("");
+    if (isControlled && setInputValue) {
+      setInputValue("");
+    } else {
+      setInternalValue("");
+    }
+    
     await onSend(content);
     textareaRef.current?.focus();
   }
@@ -58,18 +72,24 @@ export function ChatComposer({
     }
   }
 
-  const canSend = value.trim().length > 0 && !isSending;
+  const canSend = currentValue.trim().length > 0 && !isSending;
 
   return (
     <form
       onSubmit={(event) => void handleSubmit(event)}
       className={cn("mx-auto w-full max-w-3xl px-4 pb-4 md:px-6", className)}
     >
-      <InputGroup className="h-auto min-h-14 rounded-3xl border-border/80 bg-background shadow-sm dark:bg-input/40">
+      <InputGroup className="h-auto min-h-[60px] rounded-[1.5rem] border border-border/60 bg-background shadow-[0_2px_15px_-3px_rgba(0,0,0,0.05)] dark:shadow-none dark:bg-muted/30 transition-all duration-300 hover:border-border focus-within:ring-4 focus-within:ring-primary/10 focus-within:border-primary/50 focus-within:shadow-md">
         <InputGroupTextarea
           ref={textareaRef}
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
+          value={currentValue}
+          onChange={(event) => {
+            if (isControlled && onChange) {
+              onChange(event);
+            } else {
+              setInternalValue(event.target.value);
+            }
+          }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={isSending}
@@ -89,9 +109,12 @@ export function ChatComposer({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
-      <p className="mt-2 text-center text-xs text-muted-foreground">
-        ChaiGPT can make mistakes. Check important info.
-      </p>
+      <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground/80 px-2">
+        <p>ChaiGPT can make mistakes. Check important info.</p>
+        <div className="hidden sm:flex items-center gap-1.5 font-medium opacity-80">
+          <span>↵</span> Send <span className="mx-1">•</span> <span>⇧ ↵</span> New line
+        </div>
+      </div>
     </form>
   );
 }

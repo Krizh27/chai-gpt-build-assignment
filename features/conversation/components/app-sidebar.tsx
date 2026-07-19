@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import React from "react";
 import { usePathname } from "next/navigation";
 import {
   MoreHorizontalIcon,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { UserButton } from "@clerk/nextjs";
 import { useTheme } from "next-themes";
+import { Logo } from "@/components/ui/logo";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -68,20 +70,17 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              size="lg"
               className="font-semibold tracking-tight"
               render={<Link href="/" />}
             >
-              <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-sm text-primary-foreground">
-                C
-              </span>
-              <span>ChaiGPT</span>
+              <Logo className="shrink-0 text-primary scale-150 transition-transform" />
+              <span className="group-data-[collapsible=icon]:hidden transition-opacity">ChaiGPT</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton tooltip="New chat" render={<Link href="/" />}>
-              <PlusIcon />
-              <span>New chat</span>
+              <PlusIcon className="shrink-0" />
+              <span className="group-data-[collapsible=icon]:hidden transition-opacity">New chat</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
@@ -177,9 +176,15 @@ function ChatItem({
         isActive={isActive}
         tooltip={conversation.title}
         render={<Link href={`/c/${conversation.id}`} />}
-        className={cn(isActive && "font-medium")}
+        className={cn("transition-all duration-200", isActive && "font-medium bg-sidebar-accent/50 shadow-sm")}
       >
-        <span className="truncate">{conversation.title}</span>
+        {/* The first letter icon for collapsed view */}
+        <div className="flex size-4 shrink-0 items-center justify-center rounded bg-muted/50 text-[10px] font-medium group-data-[collapsible=icon]:size-full group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sm">
+          {conversation.title.charAt(0).toUpperCase()}
+        </div>
+        <span className="truncate group-data-[collapsible=icon]:hidden transition-opacity duration-200">
+          {conversation.title}
+        </span>
       </SidebarMenuButton>
 
       <DropdownMenu>
@@ -224,25 +229,12 @@ function ChatItem({
   );
 }
 
-/** Footer menu with theme toggle and Clerk user account button. */
+/** Footer menu with Clerk user account button. */
 function SidebarFooterMenu() {
-  const { resolvedTheme, setTheme } = useTheme();
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start"
-          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-        >
-          Toggle theme
-        </Button>
-      </SidebarMenuItem>
-      <SidebarMenuItem>
-        <div className="flex items-center gap-2 px-1 py-1.5">
+        <div className="flex w-full items-center px-2 py-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
           <UserButton
             appearance={{
               elements: {
@@ -250,9 +242,6 @@ function SidebarFooterMenu() {
               },
             }}
           />
-          <span className="truncate text-sm text-muted-foreground group-data-[collapsible=icon]:hidden">
-            Account
-          </span>
         </div>
       </SidebarMenuItem>
     </SidebarMenu>

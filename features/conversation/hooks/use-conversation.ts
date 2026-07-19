@@ -5,13 +5,15 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
+    createBranch,
     createConversation,
+    deleteBranch,
     deleteConversation,
     listConversations,
+    renameBranch,
     updateConversation,
 } from "@/features/conversation/actions/conversation-actions";
 import { queryKeys } from "../utils/query-keys";
-
 
 /**
  * Fetches all conversations for the sidebar via React Query.
@@ -83,9 +85,6 @@ export function useDeleteConversation(activeId?: string) {
             void queryClient.invalidateQueries({
                 queryKey: queryKeys.conversations.all,
             });
-            queryClient.removeQueries({
-                queryKey: queryKeys.messages.byConversation(id),
-            });
 
             if (activeId === id) {
                 router.push("/");
@@ -95,6 +94,60 @@ export function useDeleteConversation(activeId?: string) {
         },
         onError: (error: Error) => {
             toast.error(error.message || "Could not delete chat");
+        },
+    });
+}
+
+/**
+ * Mutation hook to create a new branch.
+ */
+export function useCreateBranch() {
+    const router = useRouter();
+
+    return useMutation({
+        mutationFn: ({ conversationId, name, activeBranchId, upToMessageId }: { conversationId: string; name: string; activeBranchId?: string; upToMessageId?: string }) => 
+            createBranch(conversationId, name, activeBranchId, upToMessageId),
+        onSuccess: (branch) => {
+            toast.success("Branch created");
+            router.push(`/c/${branch.conversationId}?branch=${branch.id}`);
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Could not create branch");
+        },
+    });
+}
+
+/**
+ * Mutation hook to rename a branch.
+ */
+export function useRenameBranch() {
+    return useMutation({
+        mutationFn: ({ branchId, name }: { branchId: string; name: string }) => 
+            renameBranch(branchId, name),
+        onSuccess: () => {
+            toast.success("Branch renamed");
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Could not rename branch");
+        },
+    });
+}
+
+/**
+ * Mutation hook to delete a branch.
+ */
+export function useDeleteBranch() {
+    const router = useRouter();
+
+    return useMutation({
+        mutationFn: (branchId: string) => deleteBranch(branchId),
+        onSuccess: ({ conversationId }) => {
+            toast.success("Branch deleted");
+            // Next.js will automatically redirect to the Main branch because we omitted the ?branch= parameter
+            router.push(`/c/${conversationId}`);
+        },
+        onError: (error: Error) => {
+            toast.error(error.message || "Could not delete branch");
         },
     });
 }

@@ -7,12 +7,12 @@ import { createMessage, deleteMessage, listMessages, updateMessage } from "../ac
 
 
 
-/** Load messages for one conversation. */
-export function useMessages(conversationId: string | undefined) {
+/** Load messages for one branch. */
+export function useMessages(branchId: string | undefined) {
   return useQuery({
-    queryKey: queryKeys.messages.byConversation(conversationId ?? "none"),
-    queryFn: () => listMessages(conversationId!),
-    enabled: Boolean(conversationId),
+    queryKey: queryKeys.messages.byBranch(branchId ?? "none"),
+    queryFn: () => listMessages(branchId!),
+    enabled: Boolean(branchId),
   });
 }
 
@@ -20,14 +20,14 @@ export function useMessages(conversationId: string | undefined) {
  * Send a user message.
  * After success we refresh messages + the sidebar (title / lastMessageAt).
  */
-export function useCreateMessage(conversationId: string) {
+export function useCreateMessage(branchId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (content: string) => createMessage(conversationId, content),
+    mutationFn: (content: string) => createMessage(branchId, content),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.messages.byConversation(conversationId),
+        queryKey: queryKeys.messages.byBranch(branchId),
       });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.conversations.all,
@@ -40,7 +40,7 @@ export function useCreateMessage(conversationId: string) {
 }
 
 /** Edit an existing message. */
-export function useUpdateMessage(conversationId: string) {
+export function useUpdateMessage(branchId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -48,7 +48,7 @@ export function useUpdateMessage(conversationId: string) {
       updateMessage(id, content),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.messages.byConversation(conversationId),
+        queryKey: queryKeys.messages.byBranch(branchId),
       });
     },
     onError: (error: Error) => {
@@ -58,14 +58,14 @@ export function useUpdateMessage(conversationId: string) {
 }
 
 /** Delete a message from the thread. */
-export function useDeleteMessage(conversationId: string) {
+export function useDeleteMessage(branchId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (id: string) => deleteMessage(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: queryKeys.messages.byConversation(conversationId),
+        queryKey: queryKeys.messages.byBranch(branchId),
       });
       toast.success("Message deleted");
     },

@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { isTextUIPart, type UIMessage } from "ai";
 import type { ChatStatus } from "ai";
 
@@ -14,6 +15,9 @@ import {
   MessageResponse,
 } from "@/components/ai-elements/message";
 import { Loader } from "@/components/ai-elements/loader";
+import { Button } from "@/components/ui/button";
+import { GitFork, Loader2, CheckCircle2 } from "lucide-react";
+import { useCreateBranch } from "../hooks/use-conversation";
 
 /** Extracts plain text from a `UIMessage` by joining all text parts. */
 function getMessageText(message: UIMessage) {
@@ -26,26 +30,101 @@ function getMessageText(message: UIMessage) {
 type ChatMessagesProps = {
   messages: UIMessage[];
   status: ChatStatus;
+  activeBranchId: string;
+  conversationId: string;
 };
+
+/**
+ * Individual message item.
+ */
+const MessageItem = React.memo(function MessageItem({ 
+    message, 
+    conversationId, 
+    activeBranchId, 
+    isCreatingBranch, 
+    onCreateBranch 
+}: { 
+    message: UIMessage;
+    conversationId: string;
+    activeBranchId: string;
+    isCreatingBranch: boolean;
+    onCreateBranch: (params: {
+        conversationId: string;
+        name: string;
+        activeBranchId: string;
+        upToMessageId: string;
+    }) => void;
+}) {
+    const text = getMessageText(message);
+    
+    return (
+        <Message from={message.role}>
+            <MessageContent>
+              {((message as any).toolInvocations || []).map((tool: any) => (
+                 <div key={tool.toolCallId} className="flex flex-col gap-1 mb-3 last:mb-2 animate-in fade-in slide-in-from-bottom-1 duration-300">
+                    <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-muted/40 hover:bg-muted/60 transition-colors w-fit px-3 py-2 rounded-full border border-border/50 shadow-sm cursor-default">
+                        {tool.state === 'result' ? (
+                            <><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> <span className="text-foreground/80">Web search complete</span></>
+                        ) : (
+                            <><Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" /> Searching the web...</>
+                        )}
+                    </div>
+                 </div>
+              ))}
+
+              {text.length > 0 && <MessageResponse>{text}</MessageResponse>}
+              
+              {/* Added opacity transition to only show on hover of the message group */}
+              <div className="mt-2 flex items-center justify-end opacity-0 transition-opacity duration-200 group-hover/message:opacity-100 focus-within:opacity-100">
+                <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                        onCreateBranch({
+                            conversationId,
+                            name: `Forked from ${message.role}`,
+                            activeBranchId,
+                            upToMessageId: message.id
+                        });
+                    }}
+                    disabled={isCreatingBranch}
+                >
+                    <GitFork className="h-3 w-3" />
+                    Branch from here
+                </Button>
+              </div>
+            </MessageContent>
+        </Message>
+    );
+});
 
 /**
  * Renders the conversation message list with markdown responses and a loading indicator.
  */
-export function ChatMessages({ messages, status }: ChatMessagesProps) {
+export function ChatMessages({ messages, status, activeBranchId, conversationId }: ChatMessagesProps) {
   const isWaiting =
     status === "submitted" && messages.at(-1)?.role === "user";
-console.log(
-    JSON.stringify(messages, null, 2)
-);
+
+  const { mutate: createBranch, isPending: isCreatingBranch } = useCreateBranch();
+
+  // Stable callback for branching
+  const handleCreateBranch = React.useCallback((params: any) => {
+      createBranch(params);
+  }, [createBranch]);
+
   return (
     <Conversation>
-      <ConversationContent className="py-8">
+      <ConversationContent className="mx-auto w-full max-w-3xl py-8">
         {messages.map((message) => (
-          <Message key={message.id} from={message.role}>
-            <MessageContent>
-              <MessageResponse>{getMessageText(message)}</MessageResponse>
-            </MessageContent>
-          </Message>
+          <MessageItem 
+              key={message.id} 
+              message={message} 
+              conversationId={conversationId} 
+              activeBranchId={activeBranchId} 
+              isCreatingBranch={isCreatingBranch} 
+              onCreateBranch={handleCreateBranch} 
+          />
         ))}
 
         {isWaiting ? (
