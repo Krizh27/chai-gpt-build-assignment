@@ -140,7 +140,7 @@
   }
   /* Code blocks */
   .prose pre {
-    @apply bg-[#0d1117] text-[#c9d1d9] p-4 rounded-xl overflow-x-auto my-6 text-[0.9em] leading-relaxed border border-border/50 shadow-sm relative;
+    @apply bg-zinc-100 dark:bg-[#0d1117] text-zinc-900 dark:text-[#c9d1d9] p-4 rounded-xl overflow-x-auto my-6 text-[0.9em] leading-relaxed border border-border/50 shadow-sm relative;
   }
   .prose pre code {
     @apply bg-transparent p-0 border-none font-mono text-inherit;
