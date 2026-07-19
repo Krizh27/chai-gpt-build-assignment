@@ -23,13 +23,13 @@ const page = async({params, searchParams}:ConversationPageProps) => {
     }
 
     const branches = await getBranches(id);
-    const mainBranch = branches.find((b) => b.isMain) || branches[0];
+    const mainBranch = branches.find((b: any) => b.isMain) || branches[0];
     
     if (!mainBranch) {
         notFound();
     }
 
-    const activeBranch = branchId ? (branches.find((b) => b.id === branchId) || mainBranch) : mainBranch;
+    const activeBranch = branchId ? (branches.find((b: any) => b.id === branchId) || mainBranch) : mainBranch;
 
     const initialMessages = await loadChatMessages(activeBranch.id);
 
